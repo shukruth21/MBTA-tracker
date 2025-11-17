@@ -1,6 +1,6 @@
 // src/components/PredictionsCard.tsx
-import React, { useEffect, useState } from "react";
-import { fetchPredictionsWithRoutes, fetchSchedulesFallback } from "../api/predictions";
+import  { useEffect, useState } from "react";
+import { fetchPredictionsWithRoutes} from "../api/predictions";
 import type { MBTAPrediction, MBTARoute, MBTATrip } from "../api/predictions";
 import AlertsBanner from "./AlertsBanner";
 
@@ -171,7 +171,7 @@ export default function PredictionsCard({ stopId, stopName }: Props) {
       
       {loading && <p className="loading">Loading trains…</p>}
       
-      {process.env.NODE_ENV === 'development' && debugInfo && (
+      { debugInfo && (
         <p style={{ fontSize: '12px', color: '#999', margin: '8px 0' }}>{debugInfo}</p>
       )}
       

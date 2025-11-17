@@ -1,5 +1,4 @@
 // src/App.tsx
-import React from "react";
 import useGeolocation from "./hooks/useGeolocation";
 import NearestStationCard from "./components/NearestStationCard";
 import InstallPrompt from './components/InstallPrompt';

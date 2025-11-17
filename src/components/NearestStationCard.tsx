@@ -1,5 +1,5 @@
 // src/components/NearestStationCard.tsx
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import { fetchNearestStops } from "../api/mbta";
 import type { MBTAStop } from "../api/mbta";
 import PredictionsCard from "./PredictionsCard";
