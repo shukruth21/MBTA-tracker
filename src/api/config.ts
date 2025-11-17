@@ -1,0 +1,1 @@
+export const MBTA_API_KEY = "6cfc56a932f1497ebf6cc3400fe0f233"
