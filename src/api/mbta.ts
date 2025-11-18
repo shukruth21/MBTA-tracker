@@ -8,6 +8,7 @@ export interface MBTAStop {
     name: string;
     latitude: number;
     longitude: number;
+    location_type: number;
   };
   distance?: number;
 }
