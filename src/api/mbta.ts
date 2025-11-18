@@ -1,14 +1,15 @@
 // src/api/mbta.ts
 import { MBTA_API_KEY } from "./config";
 
+
 export interface MBTAStop {
   id: string;
   attributes: {
     name: string;
     latitude: number;
     longitude: number;
-    location_type: number; // 0 = platform, 1 = station
   };
+  distance?: number;
 }
 
 const BASE_URL = "https://api-v3.mbta.com";
@@ -28,56 +29,48 @@ async function fetchMBTA(endpoint: string) {
   return response.json();
 }
 
-// Find nearest RAPID TRANSIT stops (subway/light rail only)
-export async function fetchNearestStops(lat: number, lon: number): Promise<MBTAStop[]> {
-  const data = await fetchMBTA(
-    `/stops?filter[latitude]=${lat}&filter[longitude]=${lon}&sort=distance&filter[radius]=0.005` // Reduced radius to ~500m
-  );
-  
-  const stops = data.data as MBTAStop[];
-  
-  // Filter for parent stations (location_type=1) only
-  // These are the main station entrances that have predictions
-  const parentStations = stops.filter(stop => stop.attributes.location_type === 1);
-  
-  console.log("Filtered parent stations:", parentStations);
-  
-  return parentStations;
-}
 
 // Fetch stops by placeId (all platforms)
 export async function fetchStopsByPlace(placeId: string): Promise<MBTAStop[]> {
-  const data = await fetchMBTA(`/stops?filter[place]=${placeId}`);
-  return data.data as MBTAStop[];
+  const url = `/stops?filter[place]=${placeId}`;
+  const res = await fetchMBTA(url);
+  return res.data as MBTAStop[];
 }
-// src/api/mbta.ts - ADD THIS NEW FUNCTION
-export async function fetchNearestStopWithPlatforms(lat: number, lon: number) {
-  // First, get nearest parent station
-  const data = await fetchMBTA(
-    `/stops?filter[latitude]=${lat}&filter[longitude]=${lon}&sort=distance&filter[radius]=0.01`
+
+// src/api/mbta.ts
+export async function fetchNearestStops(lat: number, lon: number): Promise<MBTAStop[]> {
+  const url = `/stops?filter[latitude]=${lat}&filter[longitude]=${lon}&sort=distance&filter[radius]=0.02`;
+  const res = await fetchMBTA(url);
+  const allStops = res.data as MBTAStop[];
+  
+  console.log(`Found ${allStops.length} stops within radius`);
+  
+  // Filter to only parent stations (location_type = 1 or IDs starting with "place-")
+  const parentStations = allStops.filter(stop => 
+    stop.id.startsWith('place-') || stop.attributes.location_type === 1
   );
   
-  const stops = data.data as MBTAStop[];
+  console.log(`Filtered to ${parentStations.length} parent stations`);
   
-  // Find first parent station (location_type=1)
-  const parentStation = stops.find(stop => stop.attributes.location_type === 1);
+  // Add distance to each stop
+  return parentStations.map(stop => ({
+    ...stop,
+    distance: calculateDistance(lat, lon, stop.attributes.latitude, stop.attributes.longitude)
+  }));
+}
+
+// Add this helper function if you haven't already
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
   
-  if (!parentStation) {
-    throw new Error("No parent station found nearby");
-  }
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
   
-  console.log("Found parent station:", parentStation);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   
-  // Now get all child platforms for this parent station
-  const platformsData = await fetchMBTA(
-    `/stops?filter[location_type]=0&filter[parent_station]=${parentStation.id}`
-  );
-  
-  const platforms = platformsData.data as MBTAStop[];
-  console.log("Child platforms:", platforms);
-  
-  return {
-    parentStation,
-    platforms
-  };
+  return R * c;
 }
